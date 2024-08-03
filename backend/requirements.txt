@@ -1,0 +1,6 @@
+Flask==2.2.3
+Werkzeug==2.2.3
+google-cloud-aiplatform==1.60.0
+google-generativeai==0.3.0
+psycopg2-binary==2.9.5
+flask-cors==4.0.1
