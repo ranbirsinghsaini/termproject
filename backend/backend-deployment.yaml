@@ -1,0 +1,93 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  namespace: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: flask-backend
+        image: ranbir18/backend:latest  # Replace with your actual backend Docker image
+        ports:
+        - containerPort: 5000
+        env:
+        - name: PORT
+          value: "5000"
+      - name: nginx-frontend
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: frontend-volume
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: frontend-volume
+        configMap:
+          name: frontend-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: backend
+data:
+  index.html: |
+    <html>
+    <body>
+      <!-- Your HTML content here -->
+      <script>
+        async function submitStudentInfo() {
+          const name = document.getElementById('name').value;
+          const id = document.getElementById('id').value;
+          const course = document.getElementById('course').value;
+
+          const data = {
+              name: name,
+              id: id,
+              course: course
+          };
+
+          try {
+              const response = await fetch('/submit', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data)
+              });
+
+              if (response.ok) {
+                  alert('Student information submitted successfully!');
+              } else {
+                  alert('Failed to submit student information.');
+              }
+          } catch (error) {
+              alert('An error occurred while submitting student information.');
+              console.error('Error:', error);
+          }
+        }
+      </script>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+  namespace: backend
+spec:
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
