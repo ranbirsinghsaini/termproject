@@ -36,6 +36,7 @@ def get_db_connection():
 
 def create_table():
     conn = None
+    cursor = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -63,12 +64,16 @@ def create_table():
 
 @app.route('/generate', methods=['POST'])
 def generate_text():
-    prompt = request.json['prompt']
+    prompt = request.json.get('prompt')
+    if not prompt:
+        return jsonify({'error': 'Prompt is required'})
+    
     try:
         response = genai.generate_text(prompt=prompt)
         generated_text = response.result if hasattr(response, 'result') else 'No result found in response'
         return jsonify({'response': generated_text})
     except Exception as e:
+        logger.error(f"An error occurred while generating text: {e}")
         return jsonify({'error': str(e)})
 
 @app.route('/submit', methods=['POST'])
@@ -82,6 +87,7 @@ def submit():
         return jsonify({'error': 'Missing required fields'})
 
     conn = None
+    cursor = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -104,6 +110,7 @@ def submit():
 @app.route('/')
 def index():
     return render_template_string(HTML_CONTENT)
+
 HTML_CONTENT = """
 <!DOCTYPE html>
 <html lang="en">
@@ -214,19 +221,24 @@ HTML_CONTENT = """
             const responseDiv = document.getElementById('response');
             responseDiv.innerHTML = 'Generating...';
 
-            const response = await fetch('/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt })
-            });
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt })
+                });
 
-            const data = await response.json();
-            if (data.response) {
-                responseDiv.innerHTML = data.response;
-            } else {
-                responseDiv.innerHTML = 'Error: ' + data.error;
+                const data = await response.json();
+                if (data.response) {
+                    responseDiv.innerHTML = data.response;
+                } else {
+                    responseDiv.innerHTML = 'Error: ' + data.error;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = 'Error: ' + error.message;
+                console.error('Error:', error);
             }
         }
 
@@ -242,7 +254,7 @@ HTML_CONTENT = """
             };
 
             try {
-                const response = await fetch('http://35.193.248.204/submit', {
+                const response = await fetch('/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
