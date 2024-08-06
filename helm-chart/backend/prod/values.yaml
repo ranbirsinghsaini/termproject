@@ -1,0 +1,7 @@
+image:
+  repository: ranbir18/backend
+  tag: latest
+replicaCount: 1
+service:
+  type: ClusterIP
+  port: 5000
