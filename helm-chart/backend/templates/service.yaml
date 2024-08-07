@@ -1,34 +1,13 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Service
 metadata:
-  name: {{ .Release.Name }}-my-app
+  name: {{ .Release.Name }}-nginx-service
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 80
+      protocol: TCP
   selector:
-    matchLabels:
-      app: my-app
-  template:
-    metadata:
-      labels:
-        app: my-app
-    spec:
-      containers:
-      - name: flask-backend
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-        ports:
-        - containerPort: {{ .Values.service.port }}
-        env:
-        - name: PORT
-          value: "{{ .Values.service.port }}"
-      - name: nginx-frontend
-        image: nginx:latest
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - name: frontend-volume
-          mountPath: /usr/share/nginx/html
-      volumes:
-      - name: frontend-volume
-        configMap:
-          name: {{ .Release.Name }}-frontend-config
+    app: nginx
